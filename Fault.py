@@ -8,3 +8,9 @@ class Fault:
         self.length = length
         self.width = width
         self.unk = unk
+
+class SolutionFaults:
+    def __init__(self, length, width, fault_list):
+        self.length = length
+        self.width = width
+        self.fault_list = fault_list

@@ -23,7 +23,7 @@ class KalmanFilter:
         self.res       = np.matrix([[0.], [0.], [0.]])
         self.eq_count  = np.matrix([[0], [0], [0]])
         self.eq_flag   = np.matrix([[False], [False], [False]])
-        self.reset_p   = np.matrix([[1000., 0., 0.], [0., 1000., 0.], [0., 0., 1000.]]),
+        self.reset_p   = np.matrix([[1000., 0., 0.], [0., 1000., 0.], [0., 0., 1000.]])
         self.synth_n       = 0.
         self.synth_e       = 0.
         self.synth_v       = 0.
@@ -92,7 +92,7 @@ class KalmanFilter:
     def update_matrix(self):
         delta_t = self.cur_time - self.prev_time
         self.prev_time = self.cur_time
-        q = np.matrix([[delta_t, 0., 0.], [0., delta_t, 0.], [0., 0., delta_t]]),
+        q = np.matrix([[delta_t, 0., 0.], [0., delta_t, 0.], [0., 0., delta_t]])
         self.m = self.phi * self.p * self.phi.T + q
         interm = (self.h * self.m * self.h.T + self.r).I
         self.k = self.m * self.h.T * interm
@@ -211,14 +211,14 @@ class KalmanFilter:
         self.state_2 = self.i_state_2 * 1.
 
     def eq_flag_test(self):
-        return any(self.eq_flag[0:3][0])
+        return any(self.eq_flag[0:3, 0])
 
     def eq_num_test(self):
-        return max(self.eq_count[0:3][0])
+        return max(self.eq_count[0:3, 0])
 
     def generate_output_state(self):
         return {
-            'site': None,
+            'site': self.site,
             'la': None,
             'lo': None,
             'mn': self.mea_mat[0, 0],

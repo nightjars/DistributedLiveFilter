@@ -3,15 +3,19 @@ import ok
 import copy
 
 class InversionConfiguration:
-    def __init__(self, faults):
-        self.sub_inputs = None
-        self.smooth_mat = None
-        self.mask = None
+    def __init__(self, faults, model, label, tag, sub_inputs=None, smooth_mat=None, mask=None, site_map={},
+                 site_list=[]):
+        self.sub_inputs = sub_inputs
+        self.smooth_mat = smooth_mat
+        self.mask = mask
         self.faults = faults
+        self.model = model
+        self.label = label
+        self.tag = tag
 
         # Store sites in both a list and map for efficient key search and sequencing
-        self.site_map = {}
-        self.site_list = []
+        self.site_map = site_map
+        self.site_list = site_list
 
         self.smoothing = None
         self.corner_fix = None
@@ -23,9 +27,10 @@ class InversionConfiguration:
 
 
 def inversion_configuration_generator(site_data, old=None, faults=None, smoothing=None, corner_fix=None,
-                                      short_smoothing=None, convergence=None):
+                                      short_smoothing=None, convergence=None, model=None, label=None, tag=None):
     if old is None:
-        if faults is None or smoothing is None or corner_fix is None or short_smoothing is None or convergence is None:
+        if faults is None or smoothing is None or corner_fix is None or short_smoothing is None \
+                or convergence is None or model is None or label is None or tag is None:
             return None
 
     configuration = InversionConfiguration(faults)
@@ -35,6 +40,9 @@ def inversion_configuration_generator(site_data, old=None, faults=None, smoothin
         configuration.corner_fix = old.corner_fix if corner_fix is None else corner_fix
         configuration.short_smoothing = old.short_smoothing if short_smoothing is None else short_smoothing
         configuration.convergence = old.convergence if convergence is None else convergence
+        configuration.model = old.model if model is None else model
+        configuration.label = old.label if label is None else label
+        configuration.tag = old.tag if model is None else tag
         configuration.site_map = copy.copy(old.site_map)
         configuration.site_list = copy.copy(old.site_list)
         configuration.sub_inputs = np.copy(old.sub_inputs)

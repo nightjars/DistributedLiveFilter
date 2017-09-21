@@ -1,91 +1,58 @@
 import ok1
 import numpy as np
-
+from math import cos, sin, log10
 
 def dc3d( lat, lon, depth, strike, dip, rake, fault_length, fault_width, fault_slip, tensile_slip, obs_lat, obs_lon, obs_dep ):
-	MU = float( 3e11 )
+    if lon > 180:
+        lon -= 360
+    if obs_lon > 180:
+        obs_lon -= 360
+    if rake < 0:
+        rake += 360
+    if rake > 360:
+        rake -= 360
 
-	strike = np.pi * strike / 180.
-	rake_rad = np.pi * rake / 180.
-	lat_rad = np.pi * lat / 180.
-	obs_lat_rad = np.pi * obs_lat / 180.
+    # convert to okada format
+    al1 = -fault_length / 2;
+    al2 = fault_length / 2;
+    aw1 = -fault_width / 2;
+    aw2 = fault_width / 2;
 
+    SS = (fault_slip * cos((rake) * .01744))
+    DS = (fault_slip * sin((180 - rake) * .01744))
 
+    MU = float( 3e11 )
+    EARTH_CIRCUM = 40000
+    PI = 3.14159
 
-	alpha = 0.66666
-	if( lon > 180. ):
-		lon = lon - 360.
-	lon_rad = np.pi * lon / 180.
+    pz = obs_dep
 
-	if( obs_lon > 180. ):
-		obs_lon = obs_lon - 360.
-	obs_lon_rad = np.pi * obs_lon / 180.
+    strike = strike/180*PI
+    lat_rad = lat/180*PI
+    lon_rad = lon/180*PI
+    obs_lat_rad = obs_lat/180*PI
+    obs_lon_rad = obs_lon/180*PI
 
-	northing = 111 * ( obs_lat - lat )
-	easting = 111 * np.cos( lat_rad ) * ( obs_lon - lon )
-	length = fault_length / 2.
-	width = fault_width / 2.
+    easting = 111 * cos(lat_rad) * (obs_lon-lon)
+    northing = 111 * (obs_lat - lat)
+    px = northing * cos(strike) + easting * sin(strike)
+    py = -easting * cos(strike) + northing * sin(strike)
 
-	px = northing * np.cos( strike ) + easting * np.sin( strike )
-	py = northing * np.sin( strike ) - easting * np.cos( strike )
+    result = ok1.dc3d(0.66666, np.float32(px), np.float32(py), np.float32(pz),
+                     np.float32(depth),np.float32(dip), np.float32(al1), np.float32(al2),
+                     np.float32(aw1), np.float32(aw2), np.float32(SS), np.float32(DS), np.float32(tensile_slip))
 
-	SS = fault_slip * np.cos( rake_rad )
-	DS = fault_slip * np.sin( np.pi - rake_rad )
+    ux, uy, uz, uxx, uyx, uzx, uxy, uyy, uzy, uxz, uyz, uzz, iiret = (np.float32(x) for x in result)
+    def_pt_rot_east = -uy*cos(strike) + ux * sin(strike)
+    def_pt_rot_north = uy * sin(strike) + ux*cos(strike)
+    def_pt_rot_vertical = uz
+    def_pt_rot_dzdn = uzx * cos(strike) + uzy*sin(strike)
+    def_pt_rot_dzde = uzx * sin(strike) - uzy*cos(strike)
+    moment = MU * ((SS ** 2 + DS ** 2 + tensile_slip ** 2) ** .5) * 100 * ((aw2 - aw1) * 1e5 * \
+             (al2 - al1) * 1e5)
+    moment_mag = log10(moment)/1.5-10.73
+    stress_drop = (2 * MU * (SS ** 2 + DS ** 2 + tensile_slip ** 2) ** .5 * 100 * \
+                  ((aw2 - aw1) * 1e5 * (al2 - al1) * 1e5) ** .5) / 1e6
 
-	obs_dep = -obs_dep
-
-
-#dc3d(alpha, x, y, z, depth, dip, al1, al2, aw1, aw2, disl1, disl2, disl3,
-    # ux, uy, uz,uxx, uyx, uzx, uxy, uyy, uzy, uxz, uyz, uzz, iret)
-
-
-	result = ok1.dc3d( alpha, px, py, obs_dep, depth, dip, -1 * length,
-                       length, -1 * width, width, SS, DS, tensile_slip)
-
-	ux = result[0]
-	uy = result[1]
-	uz = result[2]
-	uxx = result[3]
-	uyx = result[4]
-	uzx = result[5]
-	uxy = result[6]
-	uyy = result[7]
-	uzy = result[8]
-	uxz = result[9]
-	uyz = result[10]
-	uzz = result[11]
-
-
-	east = ux * np.sin( strike ) - uy * np.cos( strike )
-	north = uy * np.sin( strike ) + ux * np.cos( strike )
-	vertical = uz
-
-	north = north // float( 1e-5 ) / float( 1e5 )
-	east = east // float( 1e-5 ) / float( 1e5 )
-	vertical = vertical // float( 1e-5 ) / float( 1e5 )
-
-	if( np.abs( east ) < float( 1e-4 ) ):
-		east = 0.
-	if( np.abs( north ) < float( 1e-4 ) ):
-		north = 0.
-	if( np.abs( vertical ) < float( 1e-4 ) ):
-		vertical = 0.
-
-	dzdn = uzx * np.cos( strike ) + uzy * np.sin( strike )
-	dzde = uzx * np.sin( strike ) - uzy * np.cos( strike )
-
-	dzdn = np.arctan( dzdn / 1000 )
-	dzde = np.arctan( dzde / 1000 )
-
-
-
-	temp1 = np.sqrt( np.power( SS, 2 ) + np.power( DS, 2 ) + np.power( tensile_slip, 2 ) )
-	temp2 = fault_width * fault_length * float( 1e10 )
-
-	moment = MU * temp1 * 100 * temp2
-	moment_mag = np.log10( moment ) / 1.5 - 10.73
-
-	stress_drop = ( 2 * MU * temp1 * 100 / np.sqrt( temp2 ) / float( 1e6  ))
-	res = [ north, east, vertical, dzdn, dzde, moment, moment_mag, stress_drop ]
-
-	return res
+    return def_pt_rot_north, def_pt_rot_east, def_pt_rot_vertical, def_pt_rot_dzdn, def_pt_rot_dzde, \
+           moment, moment_mag, stress_drop

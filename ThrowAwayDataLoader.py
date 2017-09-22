@@ -160,8 +160,8 @@ def populate_inversions():
             fault_data = [x.split() for x in file.readlines() if x[0] != '#']
 
         faults_dict = {
-            'length': float(fault_data[0][0]),
-            'width': float(fault_data[0][1]),
+            'length': int(fault_data[0][0]),
+            'width': int(fault_data[0][1]),
             'subfault_list': [[float(x) for x in fault_data_line] for fault_data_line in fault_data[1:]]
         }
 
@@ -170,21 +170,22 @@ def populate_inversions():
             fault_object_list.append(Fault.Fault(subfault[0], subfault[1], subfault[2], subfault[3], subfault[4],
                                                  subfault[5], subfault[6], subfault[7]))
         faults = Fault.SolutionFaults(faults_dict['length'], faults_dict['width'], fault_object_list)
-        conf = InversionConfiguration.InversionConfiguration(faults, run['model'], run['label'], run['tag'])
+        conf = DatabaseObjects.\
+            InversionConfiguration(faults=faults, model=run['model'],
+                                   label=run['label'], tag=run['tag'])
         conf.smoothing = run['inverter_configuration']['smoothing']
         conf.corner_fix = run['inverter_configuration']['corner_fix']
         conf.short_smoothing = run['inverter_configuration']['short_smoothing']
         conf.convergence = run['convergence']
+        conf.min_offset = run['minimum_offset']
         print (vars(conf))
-        DatabaseObjects.save_inversion(vars(conf))
+        DatabaseObjects.save_inversion(conf)
 
 def generate_offsets():
-    inversions = DatabaseObjects.get_inversions()
-
     session = DatabaseObjects.get_db_session()
+    inversions = session.query(DatabaseObjects.InversionConfiguration).all()
 
     for inversion in inversions:
-        print (inversion)
         for site in session.query(DatabaseObjects.Site)\
                 .outerjoin(DatabaseObjects.SiteInversionAssociation)\
                 .filter(~exists().where(DatabaseObjects.SiteInversionAssociation.inversion_id == inversion.id)):
@@ -221,15 +222,15 @@ def validate_offsets():
                 mag = float(mag)
                 site = session.query(DatabaseObjects.Site).filter(DatabaseObjects.Site.name == name)[0]
                 site_inv_join = session.query(DatabaseObjects.SiteInversionAssociation).filter(and_(
-                    DatabaseObjects.SiteInversionAssociation.site_id == site.id,
-                    DatabaseObjects.SiteInversionAssociation.inversion_id == db_run.id))[0]
+                    DatabaseObjects.SiteInversionAssociation.site == site,
+                    DatabaseObjects.SiteInversionAssociation.inversion == db_run))[0]
                 db_mag = site_inv_join.offset
+                #print (db_mag)
                 #print (db_run.id)
                 #print(vars(site))
                 #print (vars(site_inv_join))
                 diff = mag - db_mag
                 if abs(diff) > 0.0005:
-                    print ("{} {} {}".format(site.name, mag, db_mag))
                     max_mag = 0
                     max_mag2 = 0
                     for fault in db_run.faults.fault_list:
@@ -244,13 +245,33 @@ def validate_offsets():
 
                         max_mag = max(mag, max_mag)
                         max_mag2 = max(mag2, max_mag2)
-                    print (max_mag)
-                    print (max_mag2)
+                    if abs(max_mag - max_mag2) > 0.0005:
+                        print("{} {} {} {} {}".format(site.name, mag, db_mag, max_mag, max_mag2))
 
 def create_inversion_configurations():
     session = DatabaseObjects.get_db_session()
+    db_runs = session.query(DatabaseObjects.InversionConfiguration).all()
+    for db_run in db_runs:
+        sites_join = session.query(DatabaseObjects.Site) \
+            .join((DatabaseObjects.SiteInversionAssociation.site, DatabaseObjects.Site)) \
+            .filter(and_(
+            DatabaseObjects.SiteInversionAssociation.inversion == db_run,
+            DatabaseObjects.SiteInversionAssociation.offset >= db_run.min_offset
+        )).all()
+
+        config=InversionConfiguration.inversion_configuration_generator(sites_join, db_run)
+        print (config.sub_inputs)
+    session.commit()
+
+def validate_inversion_configurations():
+    session = DatabaseObjects.get_db_session()
+    db_runs = session.query(DatabaseObjects.InversionConfiguration).all()
+    for db_run in db_runs:
+        print (vars(db_run))
+
 #populate_sites()
 #populate_inversions()
 #generate_offsets()
 #validate_offsets()
-
+#create_inversion_configurations()
+validate_inversion_configurations()

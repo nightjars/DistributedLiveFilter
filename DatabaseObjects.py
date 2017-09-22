@@ -16,6 +16,15 @@ class Site(Base):
     lon = Column(Float, nullable=False)
     ele = Column(Float, nullable=False)
 
+class KalmanConfiguration(Base):
+    __tablename__ = 'kalman_configuration'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    max_offset = Column(Float, nullable=False)
+    min_r = Column(Float, nullable=False)
+    eq_pause = Column(Float, nullable=False)
+    eq_threshold = Column(Float, nullable=False)
+    mes_wait = Column(Integer, nullable=False)
+    kill_limit = Column(Integer, nullable=False)
 
 class InversionConfiguration(Base):
     __tablename__ = 'inversion_configurations'
@@ -23,17 +32,18 @@ class InversionConfiguration(Base):
     model = Column(String, unique=True, nullable=False)
     label = Column(String, nullable=False)
     tag = Column(String, nullable=False)
+    min_offset = Column(Float, nullable=False)
     sub_inputs = Column(PickleType)
     smooth_mat = Column(PickleType)
     mask = Column(PickleType)
     faults = Column(PickleType)
     site_map = Column(PickleType)
     site_list = Column(PickleType)
-
+    offset = Column(PickleType)
     smoothing = Column(Boolean, nullable=False)
     corner_fix = Column(Boolean, nullable=False)
     short_smoothing = Column(Boolean, nullable=False)
-    convergence = Column(Boolean, nullable=False)
+    convergence = Column(Float, nullable=False)
 
 class SiteInversionAssociation(Base):
     __tablename__ = 'site_inversion_association'
@@ -58,11 +68,10 @@ def save_site(site_to_save):
     session.add(new_site)
     session.commit()
 
-def save_inversion(inversion_to_save):
+def save_inversion(new_inversion):
     Base.metadata.bind = engine
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-    new_inversion = InversionConfiguration(**inversion_to_save)
     session.add(new_inversion)
     session.commit()
 
@@ -70,7 +79,7 @@ def get_inversions():
     Base.metadata.bind = engine
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-    return session.query(InversionConfiguration).all()
+    return session.query(InversionConfiguration)
 
 def get_db_session():
     Base.metadata.bind = engine

@@ -27,7 +27,7 @@ class Inversion:
         # Remove the elements from sub_inputs, etc, that are not part of this
         # data set
         valid_site_indexes = np.argwhere(mask[:len(
-            self.configuration.site_list) * 3, 0] > 0)[:, 0]
+            self.configuration.site_map) * 3, 0] > 0)[:, 0]
         valid_site_fault_indexes = np.argwhere(mask[:, 0] > 0)[:, 0]
         present_sub_inputs = sub_inputs[valid_site_indexes, :]
         sub_inputs = np.vstack([present_sub_inputs, smooth_mat])

@@ -41,18 +41,13 @@ def inversion_configuration_generator(site_data, inversion_config):
             isinstance(inversion_config.site_map, dict):
         inversion_config.site_map = {}
 
-    if inversion_config.site_list is None or not \
-            isinstance(inversion_config.site_list, list):
-        inversion_config.site_list = []
-
     new_sub_input_data = {}
     for site in site_data:
         if site.name not in inversion_config.site_map:
-            new_site_idx = len(inversion_config.site_list)
+            new_site_idx = len(inversion_config.site_map)
             new_sub_input_data[new_site_idx * 3] = []
             new_sub_input_data[new_site_idx * 3 + 1] = []
             new_sub_input_data[new_site_idx * 3 + 2] = []
-            inversion_config.site_list.append(site)
             inversion_config.site_map[site.name] = new_site_idx
             for fault_idx, fault in enumerate(faults.fault_list):
                 rake = fault.strike - inversion_config.convergence
@@ -67,9 +62,9 @@ def inversion_configuration_generator(site_data, inversion_config):
                 new_sub_input_data[new_site_idx * 3 + 1].append((fault_idx, float(result[1])))
                 new_sub_input_data[new_site_idx * 3 + 2].append((fault_idx, float(result[2])))
     if inversion_config.sub_inputs is None:
-        inversion_config.sub_inputs = np.zeros((len(inversion_config.site_list) * 3, len(faults.fault_list)))
-    elif inversion_config.sub_inputs.shape[0] < len(inversion_config.site_list * 3):
-        inversion_config.sub_inputs = inversion_config.sub_inputs.resize((len(inversion_config.site_list) * 3,
+        inversion_config.sub_inputs = np.zeros((len(inversion_config.site_map) * 3, len(faults.fault_list)))
+    elif inversion_config.sub_inputs.shape[0] < len(inversion_config.site_map * 3):
+        inversion_config.sub_inputs = inversion_config.sub_inputs.resize((len(inversion_config.site_map) * 3,
                                                                     len(faults.fault_list)))
     for idx, value in new_sub_input_data.items():
         for fault_result in value:

@@ -218,9 +218,9 @@ class KalmanFilter:
 
     def generate_output_state(self):
         return {
-            'site': self.site,
-            'la': None,
-            'lo': None,
+            'site': self.site.name,
+            'la': self.site.lat,
+            'lo': self.site.lon,
             'mn': self.mea_mat[0, 0],
             'me': self.mea_mat[1, 0],
             'mv': self.mea_mat[2, 0],

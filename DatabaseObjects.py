@@ -38,12 +38,13 @@ class InversionConfiguration(Base):
     mask = Column(PickleType)
     faults = Column(PickleType)
     site_map = Column(PickleType)
-    site_list = Column(PickleType)
     offset = Column(PickleType)
     smoothing = Column(Boolean, nullable=False)
     corner_fix = Column(Boolean, nullable=False)
     short_smoothing = Column(Boolean, nullable=False)
     convergence = Column(Float, nullable=False)
+    kalman_configuration_id = Column(Integer, ForeignKey('kalman_configuration.id'))
+    kalman_configuration = relationship("KalmanConfiguration")
 
 class SiteInversionAssociation(Base):
     __tablename__ = 'site_inversion_association'

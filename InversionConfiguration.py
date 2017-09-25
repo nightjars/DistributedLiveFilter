@@ -3,34 +3,6 @@ import ok
 import copy
 import DatabaseObjects
 
-'''
-class InversionConfiguration:
-    def __init__(self, faults, model, label, tag, sub_inputs=None, smooth_mat=None, mask=None, site_map={},
-                 site_list=[], min_offset=None, offset=None):
-        self.sub_inputs = sub_inputs
-        self.smooth_mat = smooth_mat
-        self.mask = mask
-        self.faults = faults
-        self.model = model
-        self.label = label
-        self.tag = tag
-        self.min_offset = min_offset
-        self.offset = offset
-
-        # Store sites in both a list and map for efficient key search and sequencing
-        self.site_map = site_map
-        self.site_list = site_list
-
-        self.smoothing = None
-        self.corner_fix = None
-        self.short_smoothing = None
-        self.convergence = None
-
-    def get_site_index(self, site):
-        return self.site_map[site]
-'''
-
-
 def inversion_configuration_generator(site_data, inversion_config):
     if inversion_config is None:
         return None
@@ -63,9 +35,9 @@ def inversion_configuration_generator(site_data, inversion_config):
                 new_sub_input_data[new_site_idx * 3 + 2].append((fault_idx, float(result[2])))
     if inversion_config.sub_inputs is None:
         inversion_config.sub_inputs = np.zeros((len(inversion_config.site_map) * 3, len(faults.fault_list)))
-    elif inversion_config.sub_inputs.shape[0] < len(inversion_config.site_map * 3):
-        inversion_config.sub_inputs = inversion_config.sub_inputs.resize((len(inversion_config.site_map) * 3,
-                                                                    len(faults.fault_list)))
+    elif inversion_config.sub_inputs.shape[0] < len(inversion_config.site_map) * 3:
+        inversion_config.sub_inputs = inversion_config.sub_inputs.resize(len(inversion_config.site_map) * 3,
+                                                                    len(faults.fault_list))
     for idx, value in new_sub_input_data.items():
         for fault_result in value:
             fault_idx, result = fault_result
